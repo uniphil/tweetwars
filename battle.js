@@ -2,38 +2,40 @@ var field_radius = 180;
 var width = field_radius * 2,
     height = field_radius * 2;
 
-var num_players = 1,
+var num_players = 2,
     player_radius = 0.04,  // 4cm
     frame_step = 1 / 60;  // s
 
 var x = d3.scale.linear()
-        .domain([-1, 1])
-        .range([0, width]),
+        .domain([-1, 1]).range([0, width]),
     y = d3.scale.linear()
-        .domain([-1, 1])
-        .range([height, 0]),
+        .domain([-1, 1]).range([height, 0]),
     r = d3.scale.linear()
-        .domain([0, 1])
-        .range([0, field_radius]);
+        .domain([0, 1]).range([0, field_radius]),
+    ox = d3.scale.linear()
+        .domain([-1, 1]).range([-field_radius, field_radius]),
+    oy = d3.scale.linear()
+        .domain([-1, 1]).range([-field_radius, field_radius]);
 
 var area = d3.select('body').append('svg')
     .attr('width', width)
     .attr('height', height);
 
-var field = area.selectAll('.field-ring')
+var field = area.append('g').attr('class', 'field').selectAll('circle')
         .data(d3.range(1, 0, -0.1))
     .enter().append('circle')
         .attr('cx', x(0))
         .attr('cy', y(0))
         .attr('r', r)
         .attr('class', 'field-ring');
+        // .style('opacity', function(d, i) { return i / 10.0; });
 
-var players_circles = area.selectAll('.player')
+var players_groups = area.selectAll('.player')
         .data(d3.range(num_players))
-    .enter().append('circle')
-        .attr('r', r(player_radius))
+    .enter().append('g')
         .attr('class', 'player');
-
+players_groups.append('line').attr('x1', 0).attr('y1', 0);
+players_groups.append('circle').attr('r', r(player_radius));
 
 var vec = {
     sum: function(v1, v2) {
@@ -94,21 +96,22 @@ var player_next = function(player) {
     vel4 = vec.sum(player.vel, vec.scale(accel3, frame_step));
     accel4 = player.strategy(pos4, vel4, player.mass);
 
-    pos_final = vec.sum(player.pos,
-        vec.scale(vec.sum(vec.sum(vel1, vel4),
-                          vec.scale(vec.sum(vel2, vel3), 2)),
-                 frame_step / 6.0))
-    vel_final = vec.sum(player.vel,
-        vec.scale(vec.sum(vec.sum(accel1, accel4),
-                          vec.scale(vec.sum(accel2, accel3), 2)),
-                 frame_step / 6.0))
+    rk_vel = vec.scale(vec.sum(vec.sum(vel1, vel4),
+                       vec.scale(vec.sum(vel2, vel3), 2)), 1 / 6.0);
+    rk_accel = vec.scale(vec.sum(vec.sum(accel1, accel4),
+                         vec.scale(vec.sum(accel2, accel3), 2)), 1 / 6.0);
 
-    player.pos = pos_final;
-    player.vel = vel_final;
+    player.pos = vec.sum(player.pos, vec.scale(rk_vel, frame_step));
+    player.vel = vec.sum(player.vel, vec.scale(rk_accel, frame_step));
+    player.accel = rk_accel;
 };
 
 var p1strategy = function(dist, in_speed, tan_speed) {
-    return [0.2, 0];
+    return [Math.pow(dist, 2)*10 + 0.1, -tan_speed];
+}
+
+var p2strategy = function(dist, in_speed, tan_speed) {
+    return [Math.pow(dist, 2)*5 + 0.15, 0];
 }
 
 var game = {
@@ -116,17 +119,28 @@ var game = {
     players: [
         {
             pos: [0.667, 0],
-            vel: [0, 0.1],
+            vel: [-0.1, 0.4],
+            accel: [0, 0],
             mass: 4,  // Kg
             strategy: strategy_wrapper(p1strategy),
         },
-    ],
+        {
+            pos: [-0.667, 0],
+            vel: [0, -0.1],
+            accel: [0, 0],
+            mass: 4,
+            strategy: strategy_wrapper(p2strategy),
+        }
+    ]
 }
 game.update = function() {
     game.players.forEach(player_next);
-    players_circles.data(game.players)
-        .attr('cx', function(d) { return x(d.pos[0]); })
-        .attr('cy', function(d) { return y(d.pos[1]); });
+    players_groups.data(game.players)
+        .attr('transform', function(d) {
+            return "translate(" + [x(d.pos[0]), y(d.pos[1])] + ")"; })
+        .select('line').data(game.players)
+            .attr('x2', function(d) { return ox(-d.accel[0]); })
+            .attr('y2', function(d) { return oy(d.accel[1]); });
 },
 
 
