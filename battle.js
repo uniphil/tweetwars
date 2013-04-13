@@ -65,6 +65,8 @@ var strategy_wrapper = function(strategy) {
         tan_speed = -vec.cross(vel, pos);
 
         p_force = strategy(dist, in_speed, tan_speed);
+        p_force[0] = Math.min(p_force[0], 1)
+        p_force[1] = Math.min(p_force[1], 1)
 
         pos_norm = vec.scale(pos, 1.0 / vec.len(pos));
         tan_norm = [-pos_norm[1], pos_norm[0]];
@@ -111,11 +113,11 @@ var p1strategy = function(dist, in_speed, tan_speed) {
 }
 
 var p2strategy = function(dist, in_speed, tan_speed) {
-    return [dist + 0.3, 0.02];
+    return [dist + 0.3, -tan_speed / 2];
 }
 
 var p3strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2) + 0.5, -0.02];
+    return [Math.pow(dist, 2)*1.5 + -Math.pow(tan_speed*5, 3), -0.03];
 }
 
 var collide = function(p1, p2, diff_vect) {
@@ -172,14 +174,14 @@ var game = {
         },
         {
             pos: [-0.5, -0.1],
-            vel: [-0.06, 0.15],
+            vel: [-0.06, 0.12],
             accel: [0, 0],
             mass: 4,
             strategy: strategy_wrapper(p2strategy),
         },
         {
             pos: [0, 0.667],
-            vel: [0.12, 0.05],
+            vel: [0.13, 0.05],
             accel: [0, 0],
             mass: 4,
             strategy: strategy_wrapper(p3strategy),
