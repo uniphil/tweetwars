@@ -110,11 +110,11 @@ var player_next = function(player) {
 };
 
 var p1strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2)*10 + 0.1, -tan_speed];
+    return [Math.pow(dist, 2)*10 + 0.1, -tan_speed / 2];
 }
 
 var p2strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2)*3 + 0.08, 0];
+    return [0.8, 0];
 }
 
 var collisions = function(players) {
@@ -126,28 +126,25 @@ var collisions = function(players) {
     diff = vec.sub(p1.pos, p2.pos);
     offset = vec.len(diff);
     if (offset < (player_radius * 2)) {
-            // apply collided velocities
-        console.log('BOOM')
-        collision_dir = vec.scale(diff, 1.0 / vec.len(diff));
-        unaffected_dir = [-collision_dir[1], collision_dir[0]];
 
-        p1_unaffected = vec.scale(unaffected_dir,
-            vec.cross(p1.vel, collision_dir));
-        p2_unaffected = vec.scale(unaffected_dir,
-            vec.cross(p2.vel, collision_dir));
+        normal = vec.scale(diff, 1.0 / vec.len(diff));
+        tangential = [-normal[1], normal[0]];
 
-        p1_affected = vec.scale(collision_dir,
-            vec.dot(p2.vel, collision_dir));
-        p2_affected = vec.scale(collision_dir,
-            vec.dot(p1.vel, collision_dir));
+        p1_norm = vec.dot(p1.vel, normal);
+        p2_norm = vec.dot(p2.vel, normal);
+        p1_tang = vec.scale(tangential, vec.dot(p1.vel, tangential));
+        p2_tang = vec.scale(tangential, vec.dot(p2.vel, tangential));
 
-        p1.vel = vec.sum(p1_unaffected, p1_affected);
-        p2.vel = vec.sum(p2_unaffected, p2_affected);
+        p1_post = (p1_norm * (p1.mass - p2.mass) + 2 * p2_norm * p2.mass) / (p1.mass + p2.mass);
+        p2_post = (p2_norm * (p2.mass - p1.mass) + 2 * p1_norm * p1.mass) / (p2.mass + p1.mass);
 
+        p1_post_norm = vec.scale(normal, p1_post);
+        p2_post_norm = vec.scale(normal, p2_post);
 
-        // p1_mom = vec.scale(p1.vel, p1.mass)
-        // p2_mom = vec.scale(p2.vel, p2.mass)
+        p1.vel = vec.sum(p1_post_norm, p1_tang);
+        p2.vel = vec.sum(p2_post_norm, p2_tang);
 
+        console.log(p1_post_norm);
 
     }
 }
@@ -157,14 +154,14 @@ var game = {
     players: [
         {
             pos: [0.667, 0],
-            vel: [0, 0.2],
+            vel: [0, 0.1],
             accel: [0, 0],
             mass: 4,  // Kg
             strategy: strategy_wrapper(p1strategy),
         },
         {
             pos: [-0.667, 0],
-            vel: [0, -0.04],
+            vel: [0, 0.02],
             accel: [0, 0],
             mass: 4,
             strategy: strategy_wrapper(p2strategy),
