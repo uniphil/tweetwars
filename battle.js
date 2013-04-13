@@ -41,6 +41,9 @@ var vec = {
     sum: function(v1, v2) {
         return [v1[0] + v2[0], v1[1] + v2[1]];
     },
+    sub: function(v1, v2) {
+        return [v1[0] - v2[0], v1[1] - v2[1]];
+    },
     scale: function(v, scale) {
         return [v[0] * scale, v[1] * scale];
     },
@@ -111,7 +114,42 @@ var p1strategy = function(dist, in_speed, tan_speed) {
 }
 
 var p2strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2)*5 + 0.15, 0];
+    return [Math.pow(dist, 2)*3 + 0.08, 0];
+}
+
+var collisions = function(players) {
+    // for every pair of players
+    p1 = players[0];
+    p2 = players[1];
+
+        // if collided
+    diff = vec.sub(p1.pos, p2.pos);
+    offset = vec.len(diff);
+    if (offset < (player_radius * 2)) {
+            // apply collided velocities
+        console.log('BOOM')
+        collision_dir = vec.scale(diff, 1.0 / vec.len(diff));
+        unaffected_dir = [-collision_dir[1], collision_dir[0]];
+
+        p1_unaffected = vec.scale(unaffected_dir,
+            vec.cross(p1.vel, collision_dir));
+        p2_unaffected = vec.scale(unaffected_dir,
+            vec.cross(p2.vel, collision_dir));
+
+        p1_affected = vec.scale(collision_dir,
+            vec.dot(p2.vel, collision_dir));
+        p2_affected = vec.scale(collision_dir,
+            vec.dot(p1.vel, collision_dir));
+
+        p1.vel = vec.sum(p1_unaffected, p1_affected);
+        p2.vel = vec.sum(p2_unaffected, p2_affected);
+
+
+        // p1_mom = vec.scale(p1.vel, p1.mass)
+        // p2_mom = vec.scale(p2.vel, p2.mass)
+
+
+    }
 }
 
 var game = {
@@ -119,22 +157,24 @@ var game = {
     players: [
         {
             pos: [0.667, 0],
-            vel: [-0.1, 0.4],
+            vel: [0, 0.2],
             accel: [0, 0],
             mass: 4,  // Kg
             strategy: strategy_wrapper(p1strategy),
         },
         {
             pos: [-0.667, 0],
-            vel: [0, -0.1],
+            vel: [0, -0.04],
             accel: [0, 0],
             mass: 4,
             strategy: strategy_wrapper(p2strategy),
         }
     ]
 }
+game.col
 game.update = function() {
     game.players.forEach(player_next);
+    collisions(game.players);
     players_groups.data(game.players)
         .attr('transform', function(d) {
             return "translate(" + [x(d.pos[0]), y(d.pos[1])] + ")"; })
