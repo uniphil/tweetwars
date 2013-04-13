@@ -2,7 +2,7 @@ var field_radius = 180;
 var width = field_radius * 2,
     height = field_radius * 2;
 
-var num_players = 2,
+var num_players = 3,
     player_radius = 0.04,  // 4cm
     frame_step = 1 / 60;  // s
 
@@ -110,42 +110,47 @@ var player_next = function(player) {
 };
 
 var p1strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2)*10 + 0.1, -tan_speed / 2];
+    return [0.5, 0];
 }
 
 var p2strategy = function(dist, in_speed, tan_speed) {
-    return [0.8, 0];
+    return [dist * 3, 0];
+}
+
+var p3strategy = function(dist, in_speed, tan_speed) {
+    return [Math.pow(dist, 2)*6, 0];
+}
+
+var collide = function(p1, p2, diff_vect) {
+    normal = vec.scale(diff_vect, 1.0 / vec.len(diff_vect));
+    tangential = [-normal[1], normal[0]];
+
+    p1_norm = vec.dot(p1.vel, normal);
+    p2_norm = vec.dot(p2.vel, normal);
+    p1_tang = vec.scale(tangential, vec.dot(p1.vel, tangential));
+    p2_tang = vec.scale(tangential, vec.dot(p2.vel, tangential));
+
+    p1_post = (p1_norm * (p1.mass - p2.mass) + 2 * p2_norm * p2.mass) / (p1.mass + p2.mass);
+    p2_post = (p2_norm * (p2.mass - p1.mass) + 2 * p1_norm * p1.mass) / (p2.mass + p1.mass);
+
+    p1_post_norm = vec.scale(normal, p1_post);
+    p2_post_norm = vec.scale(normal, p2_post);
+
+    p1.vel = vec.sum(p1_post_norm, p1_tang);
+    p2.vel = vec.sum(p2_post_norm, p2_tang);
 }
 
 var collisions = function(players) {
-    // for every pair of players
-    p1 = players[0];
-    p2 = players[1];
-
-        // if collided
-    diff = vec.sub(p1.pos, p2.pos);
-    offset = vec.len(diff);
-    if (offset < (player_radius * 2)) {
-
-        normal = vec.scale(diff, 1.0 / vec.len(diff));
-        tangential = [-normal[1], normal[0]];
-
-        p1_norm = vec.dot(p1.vel, normal);
-        p2_norm = vec.dot(p2.vel, normal);
-        p1_tang = vec.scale(tangential, vec.dot(p1.vel, tangential));
-        p2_tang = vec.scale(tangential, vec.dot(p2.vel, tangential));
-
-        p1_post = (p1_norm * (p1.mass - p2.mass) + 2 * p2_norm * p2.mass) / (p1.mass + p2.mass);
-        p2_post = (p2_norm * (p2.mass - p1.mass) + 2 * p1_norm * p1.mass) / (p2.mass + p1.mass);
-
-        p1_post_norm = vec.scale(normal, p1_post);
-        p2_post_norm = vec.scale(normal, p2_post);
-
-        p1.vel = vec.sum(p1_post_norm, p1_tang);
-        p2.vel = vec.sum(p2_post_norm, p2_tang);
-
-        console.log(p1_post_norm);
-
+    for (p1_n = 0; p1_n < (players.length - 1); p1_n++) {
+        p1 = players[p1_n];
+        for (p2_n = (p1_n + 1); p2_n < players.length; p2_n++) {
+            p2 = players[p2_n];
+            diff = vec.sub(p1.pos, p2.pos);
+            offset = vec.len(diff)
+            if (offset < (player_radius * 2)) {
+                collide(p1, p2, diff);
+            }
+        }
     }
 }
 
@@ -165,6 +170,13 @@ var game = {
             accel: [0, 0],
             mass: 4,
             strategy: strategy_wrapper(p2strategy),
+        },
+        {
+            pos: [0, 0.667],
+            vel: [0, 0.02],
+            accel: [0, 0],
+            mass: 4,
+            strategy: strategy_wrapper(p3strategy),
         }
     ]
 }
