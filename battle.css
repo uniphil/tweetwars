@@ -1,0 +1,12 @@
+
+.field-ring {
+    stroke: #ccc;
+    stroke-width: 2px;
+    fill: #eee;
+}
+
+.player {
+    stroke: #444;
+    stroke-width: 2px;
+    fill: rgba(255, 198, 0, 0.5);
+}
