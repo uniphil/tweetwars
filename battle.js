@@ -109,15 +109,15 @@ var player_next = function(player) {
 };
 
 var p1strategy = function(dist, in_speed, tan_speed) {
-    return [0.7, 0];
+    return [Math.pow(dist, 2)*1.5, 0];
 }
 
 var p2strategy = function(dist, in_speed, tan_speed) {
-    return [dist + 0.3, -tan_speed / 2];
+    return [Math.pow(dist, 2)*1.5, 0];
 }
 
 var p3strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2)*1.5 + -Math.pow(tan_speed*5, 3), -0.03];
+    return [Math.pow(dist, 2)*1.5, 0];
 }
 
 var collide = function(p1, p2, diff_vect) {
@@ -146,7 +146,7 @@ var collisions = function(players) {
             p2 = players[p2_n];
             diff = vec.sub(p1.pos, p2.pos);
             offset = vec.len(diff)
-            if (offset < (player_radius * 2)) {
+            if (offset < (p1.radius + p2.radius)) {
                 collide(p1, p2, diff);
             }
         }
@@ -166,24 +166,27 @@ var game = {
     frame_count: 0,
     players: [
         {
-            pos: [0.7, 0.05],
-            vel: [-0.09, 0.06],
+            pos: [0, 0.8],
+            vel: [0, 0.2],
             accel: [0, 0],
+            radius: 0.08,
             mass: 4,  // Kg
             strategy: strategy_wrapper(p1strategy),
         },
         {
-            pos: [-0.5, -0.1],
-            vel: [-0.06, 0.12],
+            pos: [0.8, 0],
+            vel: [-0.1, .1],
             accel: [0, 0],
-            mass: 4,
+            radius: 0.04,
+            mass: 2,
             strategy: strategy_wrapper(p2strategy),
         },
         {
-            pos: [0, 0.667],
-            vel: [0.13, 0.05],
+            pos: [-0.8, 0],
+            vel: [0.1, 0.01],
             accel: [0, 0],
-            mass: 4,
+            radius: 0.02,
+            mass: 1,
             strategy: strategy_wrapper(p3strategy),
         }
     ]
@@ -197,9 +200,11 @@ game.update = function() {
     groups.exit().remove();
     groups.attr('transform', function(d) {
             return "translate(" + [x(d.pos[0]), y(d.pos[1])] + ")"; })
-        .select('line').data(game.players)
+        .select('line')
             .attr('x2', function(d) { return ox(-d.accel[0]); })
             .attr('y2', function(d) { return oy(d.accel[1]); });
+    groups.select('circle')
+        .attr('r', function(d) { return r(d.radius); });
 },
 
 

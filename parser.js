@@ -22,8 +22,9 @@ var Transition = function(condition, next_state) {
     return this;
 };
 
-var start = new State('no state');
+var start = new State('invalid exit');
 var integer = new State('literal');
+var num_dot = new State('invalid exit');
 var floating = new State('literal');
 var short_name = new State('name');
 var long_name = new State('name');
@@ -37,7 +38,8 @@ start.add_transition(new Transition(/\s/, start));
 start.add_transition(new Transition(/\d/, integer));
 integer.add_transition(new Transition(/\d/, integer));
 integer.add_transition(new Transition(/\./, floating));
-start.add_transition(new Transition(/\./, floating));
+start.add_transition(new Transition(/\./, num_dot));
+num_dot.add_transition(new Transition(/\d/, floating));
 floating.add_transition(new Transition(/\d/, floating));
 // names
 start.add_transition(new Transition(/[co]/, short_name));
@@ -60,7 +62,7 @@ var feed_the_machine = function(expression) {
             character = expression.slice(char_index, char_index + 1);
             next_state = state.get_next(character);
             if (next_state === null) {
-                if (state.token_name === 'no state')
+                if (state.token_name === 'invalid exit')
                     throw 'tokenize error at ' + char_index;
                 tokenized.push([
                     state.token_name,
@@ -70,7 +72,7 @@ var feed_the_machine = function(expression) {
                 break;
             } else {
                 char_index++;
-                if (next_state.token_name === 'no state')
+                if (next_state.token_name === 'invalid exit')
                     token_start = char_index;
                 state = next_state;
             }
@@ -78,6 +80,8 @@ var feed_the_machine = function(expression) {
     }
     return tokenized;
 };
+
+
 
 // FAILING CASES: '.' is evaluated as a literal
 
