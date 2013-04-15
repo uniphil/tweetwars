@@ -1,5 +1,3 @@
-document.write('<pre>'); var printline = function(t) { document.write(t); document.write('\n'); };
-
 
 //////////////////// LEXER ////////////////////
 
@@ -97,7 +95,8 @@ var op_order = [  // highest to lowest
     /[<>]/,
 ];
 var op_fns = d3.map({
-    "^": function(l, r) { return function(cx) { return l(cx) ^ r(cx); }; },
+    "^": function(l, r) { return function(cx) {
+        return Math.pow(l(cx), r(cx)); }; },
     "*": function(l, r) { return function(cx) { return l(cx) * r(cx); }; },
     "/": function(l, r) { return function(cx) { return l(cx) / r(cx); }; },
     "+": function(l, r) { return function(cx) { return l(cx) + r(cx); }; },
@@ -129,14 +128,11 @@ var compile_expression = function(strategy) {
     for (var o = 0; o < op_order.length; o++) {
         for (var t = 0; t < tokens.length;) {
             if (exiter++ > 100) throw "exit!";
-            if (tokens[t][0] === "operator") {
-                if (op_order[o].test(tokens[t][1])) {
-                    group = tokens.splice(t-1, t+2);
-                    callable = op_fns.get(group[1][1])(group[0], group[2]); // l, r
-                    tokens.splice(t-1, 0, callable);
-                } else {
-                    t++;
-                }
+            if (tokens[t][0] === "operator" &&
+                op_order[o].test(tokens[t][1])) {
+                group = tokens.splice(t-1, t+2);
+                callable = op_fns.get(group[1][1])(group[0], group[2]); // l, r
+                tokens.splice(t-1, 0, callable);
             } else {
                 t++;
             }
@@ -171,5 +167,3 @@ var compile_expression = function(strategy) {
 // };
 
 // document.write(test_exps());
-
-document.write('</pre>');

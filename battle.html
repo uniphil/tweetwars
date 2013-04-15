@@ -10,5 +10,52 @@
         <script src="d3.v3.js"></script>
         <script src="parser.js"></script>
         <script src="battle.js"></script>
+        <pre>
+#TweetWars
+
+<em>Program your strategy in a tweet. and stuff.</em>
+
+There are no rules yet. I'm looking for ideas.
+
+
+## Physics
+Field radius: 1 metre
+Player mass: 2 Kg
+Player radius: 6 cm
+Force: [evaluation of strategy expresssion] Newtons
+
+### Engine
+Integrator: Runge Kutta
+Collisions: fully elastic
+
+
+## Forces you control:
+<strong>r&lt;</strong>  <em>push toward centre.</em> The yellow line is currently proportional to the evaluation of this expression.
+  <em>more coming soon...</em>
+
+
+## Variables available to you:
+<strong>r</strong>  <em>your distance from the centre</em>
+<strong>r'</strong> <em>your speed toward the centre</em>
+<strong>r|</strong> <em>your speed tangential to the center</em>
+
+
+## Math operators available to you (in order of precedence):
+<strong>^</strong>   raise to power
+<strong>* /</strong>  multiply, divide
+<strong>+ -</strong>  add, subtract
+<strong>&lt; &gt;</strong>  less-than, greater-than (evaluate to 1.0 or 0.0 for true/false)
+
+
+## Math Bugs:
+<strong>float literals</strong>  ".2" evaluates to 2. The lexer is eating leading decimals. Workaround: zero prefix &mdash; "0.2".
+
+## Missing Math:
+<strong>Brackets</strong>  Parentheses are currently a syntax error. You cannot control order of operations (yet!).
+<strong>Unary minus</strong>  "-5" is currently a syntax error. Use 0-5.
+<strong>Convenient Constants</strong>  <em>e</em>, <em>pi</em>, etc coming soon.
+<strong>Absolute value</strong>  Not sure how I want this too look yet.
+
+</pre>
     </body>
 </html>

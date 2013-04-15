@@ -24,14 +24,28 @@ var controls = body.selectAll("div.control")
 controls.append('h2').text(function(d, i) { return ""+i});
 controls.append('div')
     .attr('class', 'rdiv')
-    .text('c<')
+    .text('r<')
     .append('input')
+        .attr('size', '32')
         .attr('value', "0.3 * r");
 controls.append('div')
     .attr("class", "rtdiv")
-    .text('c^')
+    .text('r^')
     .append('input')
-        .attr('value', '[not implemented]');
+        .attr('size', '32')
+        .attr('value', '[not yet implemented]');
+controls.append('div')
+    .attr('class', 'odiv')
+    .text('o<')
+    .append('input')
+        .attr('size', '32')
+        .attr('value', "[not yet implemented]");
+controls.append('div')
+    .attr("class", "otdiv")
+    .text('o^')
+    .append('input')
+        .attr('size', '32')
+        .attr('value', '[not yet implemented]');
 
 var area = body.append('svg')
     .attr('width', width)
@@ -170,7 +184,7 @@ var game = {
         },
         {
             pos: [0, -0.667],
-            vel: [.1, 0],
+            vel: [-.1, 0],
             accel: [0, 0],
             radius: 0.06,
             mass: 2,  // Kg
