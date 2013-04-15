@@ -38,6 +38,10 @@ input {
     font-size: 1em;
     font-family: inherit;
 }
+input:focus {
+    outline: 0;
+    background: hsl(180, 15%, 20%);
+}
 
 svg {
     display: block;
