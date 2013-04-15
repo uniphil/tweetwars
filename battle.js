@@ -2,7 +2,7 @@ var field_r = 180;
 var width = field_r * 2,
     height = field_r * 2;
 
-var num_players = 500,
+var num_players = 2,
     player_radius = 0.04,  // 4cm
     frame_step = 1 / 60;  // s
 
@@ -12,7 +12,28 @@ var x = d3.scale.linear().domain([-1, 1]).range([0, width]),
     ox = d3.scale.linear().domain([-1, 1]).range([-field_r, field_r]),
     oy = d3.scale.linear().domain([-1, 1]).range([-field_r, field_r]);
 
-var area = d3.select('body').append('svg')
+var body = d3.select('body');
+
+body.selectAll('.nojs').remove();
+
+var controls = body.selectAll("div.control")
+        .data(d3.range(num_players))
+    .enter().append('div')
+        .attr('class', 'control')
+        .attr('id', function(d, i) {return "p" + i + "control" });
+controls.append('h2').text(function(d, i) { return ""+i});
+controls.append('div')
+    .attr('class', 'rdiv')
+    .text('c<')
+    .append('input')
+        .attr('value', "0.3 * r");
+controls.append('div')
+    .attr("class", "rtdiv")
+    .text('c^')
+    .append('input')
+        .attr('value', '[not implemented]');
+
+var area = body.append('svg')
     .attr('width', width)
     .attr('height', height);
 
@@ -134,6 +155,8 @@ var boundaries = function(players) {
     }
 }
 
+
+
 var game = {
     frame_count: 0,
     players: [
@@ -141,20 +164,25 @@ var game = {
             pos: [0, 0.667],
             vel: [.1, 0],
             accel: [0, 0],
-            radius: 0.1,
+            radius: 0.06,
             mass: 2,  // Kg
-            strategy: strategy_wrapper("0.1"),
+            strategy: strategy_wrapper("0.3 * r"),
         },
         {
             pos: [0, -0.667],
             vel: [.1, 0],
             accel: [0, 0],
-            radius: 0.1,
+            radius: 0.06,
             mass: 2,  // Kg
-            strategy: strategy_wrapper("0.3"),
+            strategy: strategy_wrapper("0.3 * r"),
         },
     ]
 }
+
+controls.data(game.players).select('.rdiv input')
+    .on('change', function(d) {
+        d.strategy = strategy_wrapper(this.value);
+    });
 
 game.update = function() {
     game.players.forEach(player_next);
