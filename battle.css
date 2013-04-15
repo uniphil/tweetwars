@@ -13,6 +13,9 @@ svg {
     stroke: hsla(180, 30%, 40%, 0.2);
     stroke-width: 2px;
     fill: hsla(180, 15%, 32%, 0.1);
+
+    stroke: hsla(180, 15%, 10%, 1);
+    fill: hsla(180, 15%, 10%, 1);
 }
 
 .player {
@@ -20,9 +23,11 @@ svg {
     stroke-width: 2px;
     fill: hsla(180, 100%, 80%, 0.667);
 }
-.player:nth-child(1) circle { fill: hsla(0, 100%, 80%, 0.667); }
-.player:nth-child(2) circle { fill: hsla(120, 100%, 80%, 0.667); }
+.player:nth-child(0) circle { fill: hsla(0, 100%, 80%, 0.667); }
+.player:nth-child(1) circle { fill: hsla(80, 100%, 80%, 0.667); }
+.player:nth-child(2) circle { fill: hsla(160, 100%, 80%, 0.667); }
 .player:nth-child(3) circle { fill: hsla(240, 100%, 80%, 0.667); }
+.player:nth-child(4) circle { fill: hsla(320, 100%, 80%, 0.667); }
 .player line {
     stroke: hsla(60, 100%, 66%, 0.5);
 }

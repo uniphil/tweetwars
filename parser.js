@@ -1,5 +1,8 @@
 document.write('<pre>'); var printline = function(t) { document.write(t); document.write('\n'); };
 
+
+//////////////////// LEXER ////////////////////
+
 var State = function(token_name) {
     this.token_name = token_name;
     this.transitions = new Array();
@@ -82,6 +85,76 @@ var feed_the_machine = function(expression) {
 };
 
 
+
+//////////////////// PARSER //////////////////////
+
+var op_order = [  // highest to lowest
+    /\^/,
+    /[\*\/]/,
+    /[\+\-]/,
+    /[<>]/,
+];
+var op_fns = d3.map({
+    "^": function(l, r) { return function(cx) { return l(cx) ^ r(cx); }; },
+    "*": function(l, r) { return function(cx) { return l(cx) * r(cx); }; },
+    "/": function(l, r) { return function(cx) { return l(cx) / r(cx); }; },
+    "+": function(l, r) { return function(cx) { return l(cx) + r(cx); }; },
+    "-": function(l, r) { return function(cx) { return l(cx) - r(cx); }; },
+    "<": function(l, r) { return function(cx) { return l(cx) < r(cx); }; },
+    ">": function(l, r) { return function(cx) { return l(cx) > r(cx); }; },
+});
+
+var compile_strategy = function(strategy) {
+    // in-line replace tokens with a tree of callables
+    tokens = feed_the_machine(strategy);
+    // start with literals and names
+    for (var t = 0; t < tokens.length; t++) {
+        if (tokens[t][0] === "literal") {
+            value = parseFloat(tokens[t][1]);
+            tokens[t] = function(context) { return value; };
+        } else if (tokens[t][0] === "name") {
+            name = tokens[t][1]
+            tokens[t] = function(context) { return context.get(name); };
+        }
+    }
+    // parens
+    // operators
+    var exiter = 0;
+    for (var o = 0; o < op_order.length; o++) {
+        console.log('checking for o ' + op_order[o])
+        for (var t = 0; t < tokens.length;) {
+            console.log('against token ' + tokens[t][1]);
+            if (exiter++ > 100) throw "exit!";
+            if ((tokens[t] instanceof Array) && tokens[t][0] === "operator") {
+                console.log('found operator!');
+                if (op_order[o].test(tokens[t][1])) {
+                    console.log(tokens);
+                    console.log('WOOOO matched operator!');
+                    group_index = t-1; // assuming three tokens for binary op
+                    group = tokens.splice(t-1, t+1);
+                    console.log('token, again, ' + group[1][1]);
+                    callable = op_fns.get(group[1][1])(group[0], group[2]); // l, r
+                    tokens.splice(t-1, 0, callable);
+                    console.log(tokens);
+                } else {
+                    console.log('operator no match for me');
+                    t++;
+                }
+            } else {
+                console.log('not an operator, moving on...');
+                t++;
+            }
+        }
+    }
+    return tokens;
+}
+
+
+c_in_strategy = "2 + .1 * 3.2"; // propel toward center
+var strat = compile_strategy(c_in_strategy)
+printline(strat.join('\n'));
+console.log(strat);
+// printline(compile_strategy(c_in_strategy()));
 
 // FAILING CASES: '.' is evaluated as a literal
 
