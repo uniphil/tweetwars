@@ -1,4 +1,4 @@
-var field_radius = 90;
+var field_radius = 240;
 var width = field_radius * 2,
     height = field_radius * 2;
 
@@ -22,7 +22,7 @@ var area = d3.select('body').append('svg')
     .attr('height', height);
 
 var field = area.append('g').attr('class', 'field').selectAll('circle')
-        .data(d3.range(1, 0, -0.1))
+        .data([1]) //d3.range(1, 0, -0.1))
     .enter().append('circle')
         .attr('cx', x(0))
         .attr('cy', y(0))
