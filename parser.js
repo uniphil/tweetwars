@@ -85,6 +85,10 @@ var feed_the_machine = function(expression) {
 };
 
 
+// BUG! .1 tokenizes to 1
+
+
+
 
 //////////////////// PARSER //////////////////////
 
@@ -104,44 +108,63 @@ var op_fns = d3.map({
     ">": function(l, r) { return function(cx) { return l(cx) > r(cx); }; },
 });
 
+window.loggedarrs = new Array();
+var log_arr = function(arr) {
+    newarr = new Array();
+    for (var a = 0; a < arr.length; a++) {
+        newarr.push(arr[a]);
+    }
+    console.log(newarr);
+    window.loggedarrs.push(newarr);
+}
+var log_idx = function(arr, i) {
+    simplarr = new Array();
+    for (var a = 0; a < arr.length; a++) {
+        simplarr.push(arr[a][1]);
+    }
+    log_arr(simplarr);
+}
+
 var compile_strategy = function(strategy) {
     // in-line replace tokens with a tree of callables
     tokens = feed_the_machine(strategy);
+    log_idx(tokens, 1); ///////////////////
     // start with literals and names
     for (var t = 0; t < tokens.length; t++) {
         if (tokens[t][0] === "literal") {
             value = parseFloat(tokens[t][1]);
-            tokens[t] = function(context) { return value; };
+            tokens[t] = (function(value) {
+                return function(context) { return value; };
+            })(value);
         } else if (tokens[t][0] === "name") {
             name = tokens[t][1]
-            tokens[t] = function(context) { return context.get(name); };
+            tokens[t] = (function(name) {
+                return function(context) { return context.get(name); };
+            })(name);
         }
     }
     // parens
     // operators
     var exiter = 0;
     for (var o = 0; o < op_order.length; o++) {
-        console.log('checking for o ' + op_order[o])
+        console.log(op_order[o])
         for (var t = 0; t < tokens.length;) {
-            console.log('against token ' + tokens[t][1]);
+            console.log('test ' + tokens[t][1]);
             if (exiter++ > 100) throw "exit!";
-            if ((tokens[t] instanceof Array) && tokens[t][0] === "operator") {
-                console.log('found operator!');
+            if (tokens[t][0] === "operator") {
                 if (op_order[o].test(tokens[t][1])) {
-                    console.log(tokens);
                     console.log('WOOOO matched operator!');
-                    group_index = t-1; // assuming three tokens for binary op
-                    group = tokens.splice(t-1, t+1);
-                    console.log('token, again, ' + group[1][1]);
+                    log_arr(tokens);
+                    group = tokens.splice(t-1, t+2);
+                    console.log('group:');
+                    log_arr(group);
                     callable = op_fns.get(group[1][1])(group[0], group[2]); // l, r
                     tokens.splice(t-1, 0, callable);
                     console.log(tokens);
                 } else {
-                    console.log('operator no match for me');
                     t++;
                 }
             } else {
-                console.log('not an operator, moving on...');
                 t++;
             }
         }
@@ -150,7 +173,7 @@ var compile_strategy = function(strategy) {
 }
 
 
-c_in_strategy = "2 + .1 * 3.2"; // propel toward center
+c_in_strategy = "2 + 0.1 * 4 + 44/60 ^ 3 - 1"; // propel toward center
 var strat = compile_strategy(c_in_strategy)
 printline(strat.join('\n'));
 console.log(strat);
