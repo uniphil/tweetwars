@@ -4,7 +4,7 @@ var width = field_radius * 2,
 
 var num_players = 5,
     player_radius = 0.04,  // 4cm
-    frame_step = 1 / 24;  // s
+    frame_step = 1 / 60;  // s
 
 var x = d3.scale.linear()
         .domain([-1, 1]).range([0, width]),
