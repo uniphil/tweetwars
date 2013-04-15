@@ -24,25 +24,25 @@ var controls = body.selectAll("div.control")
 controls.append('h2').text(function(d, i) { return ""+i});
 controls.append('div')
     .attr('class', 'rdiv')
-    .text('r<')
+    .text('r< ')
     .append('input')
         .attr('size', '32')
         .attr('value', "0.3 * r");
 controls.append('div')
     .attr("class", "rtdiv")
-    .text('r^')
+    .text('r^ ')
     .append('input')
         .attr('size', '32')
-        .attr('value', '[not yet implemented]');
+        .attr('value', '0');
 controls.append('div')
     .attr('class', 'odiv')
-    .text('o<')
+    .text('o< ')
     .append('input')
         .attr('size', '32')
         .attr('value', "[not yet implemented]");
 controls.append('div')
     .attr("class", "otdiv")
-    .text('o^')
+    .text('o^ ')
     .append('input')
         .attr('size', '32')
         .attr('value', '[not yet implemented]');
@@ -72,6 +72,7 @@ var vec = {
     sub: function(v1, v2) { return [v1[0] - v2[0], v1[1] - v2[1]]; },
     scale: function(v, scale) { return [v[0] * scale, v[1] * scale]; },
     dot: function(v1, v2) { return (v1[0] * v2[0]) + (v1[1] * v2[1]); },
+    // ahem, not really cross...
     cross: function(v1, v2) { return (v1[0] * v2[1]) - (v2[0] * v1[1]) },
     len: function(v) {
         return Math.sqrt(Math.pow(v[0], 2) + Math.pow(v[1], 2));
@@ -79,21 +80,28 @@ var vec = {
 };
 
 var strategy_wrapper = function(strategy) {
-    var compiled_strategy = compile_expression(strategy);
+    var compiled_strategy = [
+        compile_expression(strategy[0]),
+        compile_expression(strategy[1])
+    ];
     return function(pos, vel, mass) {
-        context = d3.map({
+        var context = d3.map({
             "r": vec.len(pos),  // dist from centre
-            "r'": -vec.dot(vel, pos),  // speed toward centre
-            "r|": -vec.cross(vel, pos),  // speed tangent to centre
+            "r'": -vec.dot(vel, pos) / vec.len(pos),  // speed toward centre
+            "r|": -vec.cross(vel, pos) / vec.len(pos),  // speed tangent to centre
         });
-        p_force = [compiled_strategy(context), 0];
+        var p_force = [
+            compiled_strategy[0](context),
+            compiled_strategy[1](context)
+        ];
         p_force[0] = Math.min(p_force[0], 1);
-        pos_unit = vec.scale(pos, 1.0 / vec.len(pos));
-        tan_unit = [-pos_unit[1], pos_unit[0]];
-        c_force = vec.scale(pos_unit, -p_force[0]);
-        t_force = vec.scale(tan_unit, p_force[1]);
-        force = vec.sum(c_force, t_force);
-        accel = vec.scale(force, 1.0 / mass)
+        p_force[1] = Math.min(p_force[1], 1);
+        var pos_unit = vec.scale(pos, 1.0 / vec.len(pos));
+        var tan_unit = [-pos_unit[1], pos_unit[0]];
+        var c_force = vec.scale(pos_unit, -p_force[0]);
+        var t_force = vec.scale(tan_unit, p_force[1]);
+        var force = vec.sum(c_force, t_force);
+        var accel = vec.scale(force, 1.0 / mass)
         return accel;
     };
 };
@@ -150,11 +158,11 @@ var collide = function(p1, p2, diff_vect) {
 
 var collisions = function(players) {
     for (p1_n = 0; p1_n < (players.length - 1); p1_n++) {
-        p1 = players[p1_n];
+        var p1 = players[p1_n];
         for (p2_n = (p1_n + 1); p2_n < players.length; p2_n++) {
-            p2 = players[p2_n];
-            diff = vec.sub(p1.pos, p2.pos);
-            offset = vec.len(diff)
+            var p2 = players[p2_n];
+            var diff = vec.sub(p1.pos, p2.pos);
+            var offset = vec.len(diff)
             if (offset < (p1.radius + p2.radius)) { collide(p1, p2, diff); }
         }
     }
@@ -162,13 +170,12 @@ var collisions = function(players) {
 
 var boundaries = function(players) {
     for (n in players) {
-        p = players[n];
+        var p = players[n];
         if (r(vec.len(p.pos)) > field_r) {
             // players.splice(n, 1);
         }
     }
 }
-
 
 
 var game = {
@@ -180,7 +187,7 @@ var game = {
             accel: [0, 0],
             radius: 0.06,
             mass: 2,  // Kg
-            strategy: strategy_wrapper("0.3 * r"),
+            strategy: strategy_wrapper(["0.3 * r", "0"]),
         },
         {
             pos: [0, -0.667],
@@ -188,14 +195,17 @@ var game = {
             accel: [0, 0],
             radius: 0.06,
             mass: 2,  // Kg
-            strategy: strategy_wrapper("0.3 * r"),
+            strategy: strategy_wrapper(["0.3 * r", "0"]),
         },
     ]
 }
 
-controls.data(game.players).select('.rdiv input')
+controls.data(game.players)
     .on('change', function(d) {
-        d.strategy = strategy_wrapper(this.value);
+        d.strategy = strategy_wrapper([
+            d3.select(this).select('.rdiv input')[0][0].value,
+            d3.select(this).select('.rtdiv input')[0][0].value,
+        ]);
     });
 
 game.update = function() {

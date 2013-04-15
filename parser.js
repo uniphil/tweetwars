@@ -64,7 +64,8 @@ var feed_the_machine = function(expression) {
             next_state = state.get_next(character);
             if (next_state === null) {
                 if (state.token_name === 'invalid exit')
-                    throw 'tokenize error at ' + char_index;
+                    throw new Error('tokenize error at ' + char_index + ':\n' +
+                                    expression);
                 tokenized.push([
                     state.token_name,
                     expression.slice(token_start, char_index),
