@@ -1,10 +1,10 @@
-var field_radius = 180;
+var field_radius = 90;
 var width = field_radius * 2,
     height = field_radius * 2;
 
-var num_players = 3,
+var num_players = 5,
     player_radius = 0.04,  // 4cm
-    frame_step = 1 / 60;  // s
+    frame_step = 1 / 24;  // s
 
 var x = d3.scale.linear()
         .domain([-1, 1]).range([0, width]),
@@ -108,17 +108,10 @@ var player_next = function(player) {
     player.accel = rk_accel;
 };
 
-var p1strategy = function(dist, in_speed, tan_speed) {
-    return [0.7, 0];
-}
-
-var p2strategy = function(dist, in_speed, tan_speed) {
-    return [dist + 0.3, -tan_speed / 2];
-}
-
-var p3strategy = function(dist, in_speed, tan_speed) {
-    return [Math.pow(dist, 2)*1.5 + -Math.pow(tan_speed*5, 3), -0.03];
-}
+var p0strategy = function(dist, in_speed, tan_speed) { return [.25, 0]; };
+var p1strategy = function(dist, in_speed, tan_speed) { return [.25, 0]; };
+var p2strategy = function(dist, in_speed, tan_speed) { return [.25, 0]; };
+var p3strategy = function(dist, in_speed, tan_speed) { return [.25, 0]; };
 
 var collide = function(p1, p2, diff_vect) {
     normal = vec.scale(diff_vect, 1.0 / vec.len(diff_vect));
@@ -146,7 +139,7 @@ var collisions = function(players) {
             p2 = players[p2_n];
             diff = vec.sub(p1.pos, p2.pos);
             offset = vec.len(diff)
-            if (offset < (player_radius * 2)) {
+            if (offset < (p1.radius + p2.radius)) {
                 collide(p1, p2, diff);
             }
         }
@@ -157,7 +150,7 @@ var boundaries = function(players) {
     for (n in players) {
         p = players[n];
         if (r(vec.len(p.pos)) > field_radius) {
-            players.splice(n, 1);
+            // players.splice(n, 1);
         }
     }
 }
@@ -166,29 +159,48 @@ var game = {
     frame_count: 0,
     players: [
         {
-            pos: [0.7, 0.05],
-            vel: [-0.09, 0.06],
+            pos: [.5, 0.5],
+            vel: [Math.random()*.5-.25, Math.random()*.5-.25],
             accel: [0, 0],
+            radius: 0.32,
+            mass: 8,  // Kg
+            strategy: strategy_wrapper(p0strategy),
+        },
+        {
+            pos: [0, 0.667],
+            vel: [Math.random()*.5-.25, Math.random()*.5-.25],
+            accel: [0, 0],
+            radius: 0.16,
             mass: 4,  // Kg
             strategy: strategy_wrapper(p1strategy),
         },
         {
-            pos: [-0.5, -0.1],
-            vel: [-0.06, 0.12],
+            pos: [0.667, 0],
+            vel: [Math.random()*.5-.25, Math.random()*.5-.25],
             accel: [0, 0],
-            mass: 4,
+            radius: 0.08,
+            mass: 2,
             strategy: strategy_wrapper(p2strategy),
         },
         {
-            pos: [0, 0.667],
-            vel: [0.13, 0.05],
+            pos: [-0.667, 0],
+            vel: [Math.random()*.5-.25, Math.random()*.5-.25],
             accel: [0, 0],
-            mass: 4,
+            radius: 0.04,
+            mass: 1,
+            strategy: strategy_wrapper(p3strategy),
+        },
+        {
+            pos: [0, -0.667],
+            vel: [Math.random()*.5-.25, Math.random()*.5-.25],
+            accel: [0, 0],
+            radius: 0.02,
+            mass: .5,
             strategy: strategy_wrapper(p3strategy),
         }
     ]
 }
-game.col
+
 game.update = function() {
     game.players.forEach(player_next);
     collisions(game.players);
@@ -197,9 +209,11 @@ game.update = function() {
     groups.exit().remove();
     groups.attr('transform', function(d) {
             return "translate(" + [x(d.pos[0]), y(d.pos[1])] + ")"; })
-        .select('line').data(game.players)
-            .attr('x2', function(d) { return ox(-d.accel[0]); })
-            .attr('y2', function(d) { return oy(d.accel[1]); });
+        .select('line')
+            .attr('x2', function(d) { return ox(-vec.scale(d.accel, d.mass)[0]); })
+            .attr('y2', function(d) { return oy(vec.scale(d.accel, d.mass)[1]); });
+    groups.select('circle')
+        .attr('r', function(d) { return r(d.radius); });
 },
 
 
