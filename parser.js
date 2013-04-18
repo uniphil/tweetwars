@@ -1,20 +1,20 @@
 
 //////////////////// LEXER ////////////////////
 
-var State = function(token_name) {
+var State = function(token_name, exitable) {
     this.token_name = token_name;
-    this.transitions = new Array();
+    this.exitable = exitable === undefined? true : exitable;
+    this.transitions = [];
     this.add_transition = function(transition) {
         this.transitions.push(transition);
     };
     this.get_next = function(character) {
-        for (var t = 0; t < this.transitions.length; t++) {
+        for (var t = 0; t < this.transitions.length; t++)
             if (this.transitions[t].condition.test(character))
                 return this.transitions[t].next_state;
-        }
         // if we make it to the end, there is no next.
         return null;
-    }
+    };
     return this;
 };
 var Transition = function(condition, next_state) {
@@ -23,9 +23,9 @@ var Transition = function(condition, next_state) {
     return this;
 };
 
-var start = new State('invalid exit');
+var start = new State('whitespace');
 var integer = new State('literal');
-var num_dot = new State('invalid exit');
+var num_dot = new State('leading dot', false);
 var floating = new State('literal');
 var short_name = new State('name');
 var long_name = new State('name');
@@ -43,7 +43,8 @@ start.add_transition(new Transition(/\./, num_dot));
 num_dot.add_transition(new Transition(/\d/, floating));
 floating.add_transition(new Transition(/\d/, floating));
 // names
-start.add_transition(new Transition(/[ro]/, short_name));
+start.add_transition(new Transition(/[a-z]/, short_name));
+short_name.add_transition(new Transition(/[a-z]/, short_name));
 short_name.add_transition(new Transition(/['\|]/, long_name));
 // parens
 start.add_transition(new Transition(/\(/, o_paren));
@@ -55,7 +56,7 @@ start.add_transition(new Transition(/[\^\*\/\+\-<>]/, operator));
 var feed_the_machine = function(expression) {
     // returns a list of tokens for an expression, or raises tokenize error.
     var char_index = 0,
-        tokenized = new Array();
+        tokenized = [];
     while (char_index < expression.length) {
         state = start;
         token_start = char_index;
@@ -69,12 +70,12 @@ var feed_the_machine = function(expression) {
                 tokenized.push([
                     state.token_name,
                     expression.slice(token_start, char_index),
-                    [token_start, char_index],
+                    [token_start, char_index]
                 ]);
                 break;
             } else {
                 char_index++;
-                if (next_state.token_name === 'invalid exit')
+                if (next_state.token_name === 'whitespace')
                     token_start = char_index;
                 state = next_state;
             }
@@ -93,7 +94,7 @@ var op_order = [  // highest to lowest
     /\^/,
     /[\*\/]/,
     /[\+\-]/,
-    /[<>]/,
+    /[<>]/
 ];
 var op_fns = d3.map({
     "^": function(l, r) { return function(cx) {
@@ -103,7 +104,7 @@ var op_fns = d3.map({
     "+": function(l, r) { return function(cx) { return l(cx) + r(cx); }; },
     "-": function(l, r) { return function(cx) { return l(cx) - r(cx); }; },
     "<": function(l, r) { return function(cx) { return l(cx) < r(cx); }; },
-    ">": function(l, r) { return function(cx) { return l(cx) > r(cx); }; },
+    ">": function(l, r) { return function(cx) { return l(cx) > r(cx); }; }
 });
 
 var compile_expression = function(strategy) {
@@ -112,12 +113,12 @@ var compile_expression = function(strategy) {
     // start with literals and names
     for (var t = 0; t < tokens.length; t++) {
         if (tokens[t][0] === "literal") {
-            value = parseFloat(tokens[t][1]);
+            var value = parseFloat(tokens[t][1]);
             tokens[t] = (function(value) {
                 return function(context) { return value; };
             })(value);
         } else if (tokens[t][0] === "name") {
-            name = tokens[t][1]
+            var name = tokens[t][1];
             tokens[t] = (function(name) {
                 return function(context) { return context.get(name); };
             })(name);
@@ -127,7 +128,7 @@ var compile_expression = function(strategy) {
     // operators
     var exiter = 0;
     for (var o = 0; o < op_order.length; o++) {
-        for (var t = 0; t < tokens.length;) {
+        for (t = 0; t < tokens.length; 0) {
             if (exiter++ > 100) throw "exit!";
             if (tokens[t][0] === "operator" &&
                 op_order[o].test(tokens[t][1])) {
@@ -140,7 +141,7 @@ var compile_expression = function(strategy) {
         }
     }
     return tokens[0];
-}
+};
 
 
 

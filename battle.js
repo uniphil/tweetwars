@@ -1,4 +1,4 @@
-var field_r = 180;
+var field_r = 240;
 var width = field_r * 2,
     height = field_r * 2;
 
@@ -20,32 +20,27 @@ var controls = body.selectAll("div.control")
         .data(d3.range(num_players))
     .enter().append('div')
         .attr('class', 'control')
-        .attr('id', function(d, i) {return "p" + i + "control" });
-controls.append('h2').text(function(d, i) { return ""+i});
+        .attr('id', function(d, i) {return "p" + i + "control"; });
+
 controls.append('div')
     .attr('class', 'rdiv')
-    .text('r< ')
-    .append('input')
-        .attr('size', '32')
-        .attr('value', "0.3 * r");
+    .text('r< ').append('div')
+        .each(function() { EXC.ExpressionInput(this, "r"); });
+
 controls.append('div')
-    .attr("class", "rtdiv")
-    .text('r^ ')
-    .append('input')
-        .attr('size', '32')
-        .attr('value', '0');
+    .attr('class', 'rtdiv')
+    .text('r^ ').append('div')
+        .each(function() { new EXC.ExpressionInput(this, "0"); });
+
 controls.append('div')
     .attr('class', 'odiv')
-    .text('o< ')
-    .append('input')
-        .attr('size', '32')
-        .attr('value', "[not yet implemented]");
+    .text('o< ').append('div')
+        .each(function() { new EXC.ExpressionInput(this, "0"); });
+
 controls.append('div')
-    .attr("class", "otdiv")
-    .text('o^ ')
-    .append('input')
-        .attr('size', '32')
-        .attr('value', '[not yet implemented]');
+    .attr('class', 'otdiv')
+    .text('o^ ').append('div')
+        .each(function() { new EXC.ExpressionInput(this, "0"); });
 
 var area = body.append('svg')
     .attr('width', width)
@@ -73,57 +68,73 @@ var vec = {
     scale: function(v, scale) { return [v[0] * scale, v[1] * scale]; },
     dot: function(v1, v2) { return (v1[0] * v2[0]) + (v1[1] * v2[1]); },
     // ahem, not really cross...
-    cross: function(v1, v2) { return (v1[0] * v2[1]) - (v2[0] * v1[1]) },
+    cross: function(v1, v2) { return (v1[0] * v2[1]) - (v2[0] * v1[1]); },
     len: function(v) {
         return Math.sqrt(Math.pow(v[0], 2) + Math.pow(v[1], 2));
-    },
+    }
 };
 
 var strategy_wrapper = function(strategy) {
     var compiled_strategy = [
-        compile_expression(strategy[0]),
-        compile_expression(strategy[1])
+        EXC.compile(strategy[0]),
+        EXC.compile(strategy[1]),
+        EXC.compile(strategy[2]),
+        EXC.compile(strategy[3])
     ];
-    return function(pos, vel, mass) {
-        var context = d3.map({
+    return function(pos, vel, mass, op) {
+        var context = {
             "r": vec.len(pos),  // dist from centre
             "r'": -vec.dot(vel, pos) / vec.len(pos),  // speed toward centre
             "r|": -vec.cross(vel, pos) / vec.len(pos),  // speed tangent to centre
-        });
+            "o": vec.len(vec.sub(op.pos, pos)),
+            "o'": vec.len(vec.sub(op.vel, vel))
+        };
         var p_force = [
             compiled_strategy[0](context),
-            compiled_strategy[1](context)
+            compiled_strategy[1](context),
+            compiled_strategy[2](context),
+            compiled_strategy[3](context)
         ];
         p_force[0] = Math.min(p_force[0], 1);
         p_force[1] = Math.min(p_force[1], 1);
+        p_force[2] = Math.min(p_force[2], 1);
+        p_force[3] = Math.min(p_force[3], 1);
         var pos_unit = vec.scale(pos, 1.0 / vec.len(pos));
         var tan_unit = [-pos_unit[1], pos_unit[0]];
+        var op_unit = (function(v) {
+            return vec.scale(v, 1/vec.len(v));
+        })(vec.sub(op.pos, pos));
+        var opt_unit = [-op_unit[1], pos_unit[0]];
         var c_force = vec.scale(pos_unit, -p_force[0]);
         var t_force = vec.scale(tan_unit, p_force[1]);
-        var force = vec.sum(c_force, t_force);
-        var accel = vec.scale(force, 1.0 / mass)
+        var o_force = vec.scale(op_unit, p_force[2]);
+        var ot_force = vec.scale(opt_unit, p_force[3]);
+        var cforce = vec.sum(c_force, t_force);
+        var oforce = vec.sum(o_force, ot_force);
+        var force = vec.sum(cforce, oforce);
+        var accel = vec.scale(force, 1.0 / mass);
         return accel;
     };
 };
 
-var player_next = function(player) {
+var player_next = function(player, op) {
     // runge kutta
 
     var pos1 = player.pos;
     var vel1 = player.vel;
-    var accel1 = player.strategy(pos1, vel1, player.mass);
+    var accel1 = player.strategy(pos1, vel1, player.mass, op);
 
     var pos2 = vec.sum(player.pos, vec.scale(vel1, frame_step / 2));
     var vel2 = vec.sum(player.vel, vec.scale(accel1, frame_step / 2));
-    var accel2 = player.strategy(pos2, vel2, player.mass);
+    var accel2 = player.strategy(pos2, vel2, player.mass, op);
 
     var pos3 = vec.sum(player.pos, vec.scale(vel2, frame_step / 2));
     var vel3 = vec.sum(player.vel, vec.scale(accel2, frame_step / 2));
-    var accel3 = player.strategy(pos3, vel3, player.mass);
+    var accel3 = player.strategy(pos3, vel3, player.mass, op);
 
     var pos4 = vec.sum(player.pos, vec.scale(vel3, frame_step));
     var vel4 = vec.sum(player.vel, vec.scale(accel3, frame_step));
-    var accel4 = player.strategy(pos4, vel4, player.mass);
+    var accel4 = player.strategy(pos4, vel4, player.mass, op);
 
     var rk_vel = vec.scale(vec.sum(vec.sum(vel1, vel4),
                            vec.scale(vec.sum(vel2, vel3), 2)), 1 / 6.0);
@@ -154,7 +165,7 @@ var collide = function(p1, p2, diff_vect) {
 
     p1.vel = vec.sum(p1_post_norm, p1_tang);
     p2.vel = vec.sum(p2_post_norm, p2_tang);
-}
+};
 
 var collisions = function(players) {
     for (p1_n = 0; p1_n < (players.length - 1); p1_n++) {
@@ -162,54 +173,59 @@ var collisions = function(players) {
         for (p2_n = (p1_n + 1); p2_n < players.length; p2_n++) {
             var p2 = players[p2_n];
             var diff = vec.sub(p1.pos, p2.pos);
-            var offset = vec.len(diff)
+            var offset = vec.len(diff);
             if (offset < (p1.radius + p2.radius)) { collide(p1, p2, diff); }
         }
     }
-}
+};
 
 var boundaries = function(players) {
-    for (n in players) {
+    for (var n in players) {
         var p = players[n];
         if (r(vec.len(p.pos)) > field_r) {
             // players.splice(n, 1);
         }
     }
-}
+};
 
 
 var game = {
     frame_count: 0,
     players: [
         {
-            pos: [0, 0.667],
-            vel: [.1, 0],
+            pos: [0, 0.4],
+            vel: [0.03, 0],
             accel: [0, 0],
-            radius: 0.06,
-            mass: 2,  // Kg
-            strategy: strategy_wrapper(["0.3 * r", "0"]),
+            radius: 0.03,
+            mass: 6,  // Kg
+            strategy: strategy_wrapper(["0.3 * r", "0", "0", "0"])
         },
         {
-            pos: [0, -0.667],
-            vel: [-.1, 0],
+            pos: [0, -0.4],
+            vel: [-0.03, 0],
             accel: [0, 0],
-            radius: 0.06,
-            mass: 2,  // Kg
-            strategy: strategy_wrapper(["0.3 * r", "0"]),
-        },
+            radius: 0.03,
+            mass: 6,  // Kg
+            strategy: strategy_wrapper(["0.3 * r", "0", "0", "0"])
+        }
     ]
-}
+};
 
 controls.data(game.players)
-    .on('change', function(d) {
+    .on('input', function(d) {
         d.strategy = strategy_wrapper([
-            d3.select(this).select('.rdiv input')[0][0].value,
-            d3.select(this).select('.rtdiv input')[0][0].value,
+            d3.select(this).select('.rdiv .expression-input')[0][0].textContent,
+            d3.select(this).select('.rtdiv .expression-input')[0][0].textContent,
+            d3.select(this).select('.odiv .expression-input')[0][0].textContent,
+            d3.select(this).select('.otdiv .expression-input')[0][0].textContent
         ]);
     });
 
 game.update = function() {
-    game.players.forEach(player_next);
+    for (var p=0; p<game.players.length; p++) {
+        player_next(game.players[p], game.players[(p + 1) % game.players.length]);
+    }
+    // game.players.forEach(player_next);
     collisions(game.players);
     boundaries(game.players);
     groups = players_groups.data(game.players);

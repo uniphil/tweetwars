@@ -8,7 +8,7 @@
     <body>
         <p class='nojs'>You need a modern browser with javascript enabled to play this game.</p>
         <script src="d3.v3.js"></script>
-        <script src="parser.js"></script>
+        <script src="expression-compiler.js"></script>
         <script src="battle.js"></script>
         <pre>
 #TweetWars
@@ -20,9 +20,9 @@ There are no rules yet. I'm looking for ideas.
 
 ## Physics
 Field radius: 1 metre
-Player mass: 2 Kg
-Player radius: 6 cm
-Force: [evaluation of strategy expression] Newtons
+Player mass: 6 Kg
+Player radius: 3 cm
+Force: [evaluation of strategy expression] Newtons (capped at 1)
 Integrator: Runge Kutta
 Collisions: fully elastic
 
@@ -30,7 +30,8 @@ Collisions: fully elastic
 ## Forces you control:
 <strong>r&lt;</strong>  <em>push toward centre.</em>
 <strong>r^</strong>  <em>push tangent to centre.</em>
-  <em>more coming soon...</em>
+<strong>o&lt;</strong>  <em>push toward opponent.</em>
+<strong>o^</strong>  <em>push counter-clockwise around opponent. Likely to change.</em>
 
 
 ## Variables available to you:
@@ -47,9 +48,9 @@ Collisions: fully elastic
 
 
 ## Math Bugs:
-<strong>float literals</strong>  ".2" evaluates to 2. The lexer is eating leading decimals. Workaround: zero prefix &mdash; "0.2".
+<strike><strong>float literals</strong>  ".2" evaluates to 2. The lexer is eating leading decimals. Workaround: zero prefix &mdash; "0.2".</strike>
 
-## Missing Math:
+## Missing Math (coming soon):
 <strong>Brackets</strong>  Parentheses are currently a syntax error. You cannot control order of operations (yet!).
 <strong>Unary minus</strong>  "-5" is currently a syntax error. Use 0-5.
 <strong>Convenient Constants</strong>  <em>e</em>, <em>pi</em>, etc coming soon.

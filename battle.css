@@ -22,26 +22,38 @@ body {
     color: hsla(240, 100%, 80%, 0.667);;
 }
 
-.control h2 {
+.expression-container {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    height: 1.3rem;
+    width: 24rem;
+}
+.expression-colours,
+.expression-input {
+    display: block;
+    position: absolute;
     margin: 0;
-    font-size: 1em;
-    font-weight: normal;
+    padding: 0 0.3rem;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    font-size: inherit;
+    line-height: 1.3rem;
     font-family: monospace;
-    display: none;
 }
-
-input {
-    padding: 0 0.3em;
-    border: 0;
-    background: hsl(180, 15%, 10%);
-    color: inherit;
-    font-size: 1em;
-    font-family: inherit;
-}
-input:focus {
-    outline: 0;
-    background: hsl(180, 15%, 20%);
-}
+.expression-colours { background: hsla(180, 15%, 10%, 1); }
+.expression-input { color: rgba(127, 127, 127, 0); }
+.expression-input:focus { background: rgba(127,127,127,0.2); outline:none; }
+.expression-over { background: #443; }
+.expression-whitespace {}
+.expression-literal { color: hsl(31, 79%, 64%); }
+.expression-name { color: hsl(48, 100%, 80%); }
+.expression-o_paren,
+.expression-c_paren { color: hsl(170, 53%, 84%); }
+.expression-operator { color: hsl(209, 39%, 65%); font-weight: bold; }
+.expression-invalid { color: white; background: hsl(0, 56%, 44%); }
 
 svg {
     display: block;
