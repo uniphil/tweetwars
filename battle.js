@@ -237,7 +237,31 @@ game.update = function() {
             .attr('y2', function(d) { return oy(vec.scale(d.accel, d.mass)[1]); });
     groups.select('circle')
         .attr('r', function(d) { return r(d.radius); });
-},
+};
 
+game.toggle = function() {
+    if (window.the_game_is_running) {
+        window.clearInterval(window.the_game_is_running);
+        window.the_game_is_running = 0;
+    } else {
+        window.the_game_is_running = window.setInterval(
+            game.update, frame_step * 1000);
+    }
+}; game.toggle();
 
-window.setInterval(game.update, frame_step * 1000);
+game.reset = function() {
+    game.players[0].pos = [0, 0.4];
+    game.players[0].vel = [0.03, 0];
+    game.players[1].pos = [0, -0.4];
+    game.players[1].vel = [-0.03, 0];
+    game.update();
+};
+
+d3.select(document.body).selectAll("button.state-button")
+        .data([
+            {label: "reset", action: game.reset},
+            {label: "play/pause", action: game.toggle}
+        ]).enter()
+    .append("button").attr("class", "state-button")
+    .text(function(d) { return d.label; })
+    .on("click", function(d) { d.action(); });
