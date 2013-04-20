@@ -91,3 +91,14 @@ button {
     border-radius: 6px;
     float: right;
 }
+
+button#shstuff {
+    float: none;
+}
+#stuff {
+    height: 0;
+    overflow: hidden;
+}
+#stuff.show {
+    height: auto;
+}

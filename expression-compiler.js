@@ -1,156 +1,100 @@
-
 var ExpressionCompiler = (function() {
 
-    this.lexMachine = (function() {
-        var TokenState = function(exitName) {
-            this.exitName = exitName;
-            this.links = [];
-            this.link = function(condition, next_state) {
-                this.links.push({condition: condition,
-                                next_state: next_state});
-                return next_state;  // so we can chain link declarations
-            };
-            this.getNext = function(character) {
-                for (var t = 0; t < this.links.length; t++) {
-                    if (this.links[t].condition.test(character)) {
-                        return this.links[t].next_state;
-                    }
-                }
-                if (this.exitName === null) {
-                    throw 'invalid state machine exit';
-                }
-                return null;  // signal state machine exit
-            };
-            return this;
+    var State = function(name, type) {
+        this.name = name;
+        this.type = type;
+        this.links = [];
+        this.link = function(condition, next_state) {
+            this.links.push({condition: condition,
+                            next_state: next_state});
+            return next_state;  // so we can chain link declarations
         };
-
-        var sm = {
-            enter: new TokenState(null),  // invalid exit
-            white: new TokenState('whitespace'),
-            num: new TokenState('literal'),
-            dot: new TokenState(null),  // invalid exit
-            ndot: new TokenState('literal'),
-            dec: new TokenState('literal'),
-            name: new TokenState('name'),
-            name_suf: new TokenState('name'),
-            o_paren: new TokenState('o_paren'),
-            c_paren: new TokenState('c_paren'),
-            operator: new TokenState('operator')
+        this.get_next = function(character) {
+            for (var index = 0; index < this.links.length; index++) {
+                if (this.links[index].condition.test(character)) {
+                    return this.links[index].next_state;
+                }
+            }
+            if (this.name === null) {
+                throw 'invalid state machine exit';
+            }
+            return null;  // signal state machine exit
         };
+        return this;
+    };
 
-        sm.enter.link(/\s/, sm.white).link(/\s/, sm.white);  // w h i t e s p a c e
-        sm.enter.link(/\d/, sm.num).link(/\d/, sm.num)
-            .link(/\./, sm.ndot).link(/\d/, sm.dec).link(/\d/, sm.dec);  // 123.45
-        sm.enter.link(/\./, sm.dot).link(/\d/, sm.dec);  // .67
-        sm.enter.link(/[a-z]/, sm.name).link(/[a-z]/, sm.name).link(/['\|]/, sm.name_suf);  // rad|
-        sm.enter.link(/\(/, sm.o_paren);  // (
-        sm.enter.link(/\)/, sm.c_paren);  // )
-        sm.enter.link(/[\^\*\/\+\-<>]/, sm.operator);  // operators
-
-        return sm.enter;
-    }());
+    this.lex_machine = function() {
+        var s = {
+            enter: new State(null),  // invalid exit
+            white: new State('whitespace', 'whitespace'),
+            num: new State('literal', 'value'),
+            dot: new State(null),  // invalid exit
+            ndot: new State('literal', 'value'),
+            dec: new State('literal', 'value'),
+            name: new State('name', 'value'),
+            name_suf: new State('name', 'value'),
+            o_paren: new State('o_paren', 'bracket'),
+            o_square: new State('o_square', 'bracket'),
+            c_paren: new State('c_paren', 'bracket'),
+            c_square: new State('c_square', 'bracket'),
+            power: new State('power', 'operator'),
+            multiply: new State('multiply', 'operator'),
+            divide: new State('divide', 'operator'),
+            plus: new State('plus', 'operator'),
+            minus: new State('minus', 'operator'),
+            less: new State('less', 'operator'),
+            greater: new State('greater', 'operator')
+        };
+        s.enter.link(/\s/, s.white).link(/\s/, s.white);  // w h i t e s p a c e
+        s.enter.link(/\d/, s.num).link(/\d/, s.num).link(/\./, s.ndot).link(/\d/, s.dec).link(/\d/, s.dec);  // 123.45
+        s.enter.link(/\./, s.dot).link(/\d/, s.dec);  // .67; dec already loops on itself ^^
+        s.enter.link(/[a-z]/, s.name).link(/[a-z]/, s.name).link(/['\|]/, s.name_suf);  // rad|
+        s.enter.link(/\(/, s.o_paren);  // (
+        s.enter.link(/\[/, s.o_square);  // [
+        s.enter.link(/\)/, s.c_paren);  // )
+        s.enter.link(/\]/, s.c_square);  // ]
+        s.enter.link(/\^/, s.power);  // powers
+        s.enter.link(/\*/, s.multiply);  // multiply
+        s.enter.link(/\//, s.divide);  // divides
+        s.enter.link(/\+/, s.plus);  // pluss
+        s.enter.link(/\-/, s.minus);  // minus
+        s.enter.link(/</, s.less);  // lesss
+        s.enter.link(/>/, s.greater);  // greaters
+        return s.enter;
+    }();
 
     this.lex = function(expression) {
-        var idx = 0,
+        var index,
             token_start,
             tokens = [],
             state,
             next_state;
-        var eat = function() {
-            token_start = idx;
-            state = this.lexMachine.getNext(expression.slice(idx, idx + 1));
-            do {
-                idx++;
-                next_state = state.getNext(expression.slice(idx, idx + 1));
-                state = next_state ? next_state : state;
-            } while (next_state !== null);
-        };
-        while (idx < expression.length) {
+        for (index = 0; index < expression.length;) {
             try {
-                eat();
+                token_start = index;
+                state = this.lex_machine.get_next(expression.slice(index, index + 1));
+                do {
+                    index++;
+                    next_state = state.get_next(expression.slice(index, index + 1));
+                    state = next_state ? next_state : state;
+                } while (next_state !== null);
             } catch(e) {
-                state = {exitName: 'invalid'};
-                idx = expression.length;
+                if (e !== 'invalid state machine exit') {
+                    throw e;  // some other error
+                }
+                state = {name: 'invalid', type: 'invalid'};
+                index = expression.length;  // mark it all invalid to the end
                 next_state = null;
             }
             tokens.push({
-                name: state.exitName,
-                rep: expression.slice(token_start, idx),
-                indices: [token_start, idx]
+                name: state.name,
+                type: state.type,
+                rep: expression.slice(token_start, index),
+                indices: [token_start, index]
             });
         }
         return tokens;
     };
-
-    this.compile = (function() {
-        var ops = {
-            order: [/\^/, /[\*\/]/, /[\+\-]/, /[<>]/],
-            funcs: {
-                "^": function(l,r) {
-                    return function(c) {return Math.pow(l.fn(c), r.fn(c)); };},
-                "*": function(l,r){
-                    return function(c) { return l.fn(c) * r.fn(c); }; },
-                "/": function(l,r){
-                    return function(c) { return l.fn(c) / r.fn(c); }; },
-                "+": function(l,r){
-                    return function(c) { return l.fn(c) + r.fn(c); }; },
-                "-": function(l,r){
-                    return function(c) { return l.fn(c) - r.fn(c); }; },
-                "<": function(l,r){
-                    return function(c) { return l.fn(c) < r.fn(c); }; },
-                ">": function(l,r){
-                    return function(c) { return l.fn(c) > r.fn(c); }; }
-            }
-        };
-
-        var compiler = function(exp) {
-            var tokens = typeof exp === 'string' ? this.lex(exp) : exp,
-                token,
-                token_index = 0;
-            // strip whitespace, resolve literals and names
-            while (token_index < tokens.length) {
-                switch (tokens[token_index].name) {
-                    case "whitespace":
-                        tokens.splice(token_index, 1);  // pop it!
-                        break;
-                    case "literal":
-                        tokens[token_index].fn = (function(value) {
-                            return function() { return value; };
-                        })(parseFloat(tokens[token_index].rep));
-                        token_index++;
-                        break;
-                    case "name":
-                        tokens[token_index].fn = (function(var_name) {
-                            return function(cx) { return cx[var_name]; };
-                        })(tokens[token_index].rep);
-                        token_index++;
-                        break;
-                    default:
-                        token_index++;
-                }
-            }
-            // parentheses ?!?
-            // operators
-            for (op_index = 0; op_index < ops.order.length; op_index++) {
-                token_index = 0;
-                while (token_index < tokens.length) {
-                    token = tokens[token_index];
-                    if (tokens[token_index].name === "operator" &&
-                        ops.order[op_index].test(token.rep)) {
-                        group = tokens.splice(token_index-1, token_index+2);
-                        group[1].fn = ops.funcs[token.rep](group[0], group[2]);
-                        tokens.splice(token_index-1, 0, group[1]);
-                        // token_index++;
-                    } else {
-                        token_index++;
-                    }
-                    // token_index++;
-                }
-            }
-            return tokens[0].fn;
-        };
-        return compiler;
-    })();
 
     this.mark = function(exp) {
         var tokens = typeof exp == 'string' ? this.lex(exp) : exp,
@@ -163,6 +107,148 @@ var ExpressionCompiler = (function() {
         }
         return marked;
     };
+
+    this.value_clean_disambiguation = function(tokens) {
+        var index,
+            previous,
+            token,
+            value;
+        for (index = 0; index < tokens.length; index++) {
+            token = tokens[index];
+            if (token.name === 'literal') {
+                value = parseFloat(token.rep);
+                token.fn = (function(value) {
+                    return function() { return value; };
+                })(value);
+            } else if (token.name === 'name') {
+                token.fn = (function(name) {
+                    return function(ctx) { return ctx[name]; };
+                })(token.rep);
+            } else if (token.type === 'whitespace') {
+                tokens.splice(index, 1);  // pop it!
+                index--;  // removed from list, update counter accordingly
+            } else if (token.type === 'operator') {
+                if (/plus|minus/.test(token.name)) {
+                    previous = tokens[index - 1];
+                    if (index === 0 ||
+                        /binary_operator/.test(previous.type) ||
+                        /^o_/.test(previous.name)) {
+                        token.type = 'unary_operator';
+                    } else {
+                        token.type = 'binary_operator';
+                    }
+                } else {
+                    token.type = 'binary_operator';
+                }
+            }
+        }
+        return tokens;
+    };
+
+    var bin_wrap = function(f) {  // wrap the binary functions
+        return function(lo, ro) {
+            return function(cx) {
+                var l = lo.fn(cx), r = ro.fn(cx);
+                return f.call(null, l, r);
+            };
+        };
+    };
+
+    var op_funcs = {
+        order: [
+            [/[oc]_(paren|square)/, 'bracket'],
+            [/power/, 'binary_operator'],
+            [/plus|minus/, 'unary_operator'],
+            [/multiply|divide/, 'binary_operator'],
+            [/plus|minus/, 'binary_operator'],
+            [/less|greater/, 'binary_operator']
+        ],
+        bin: {
+            power: bin_wrap(function(l, r) { return Math.pow(l, r); }),
+            multiply: bin_wrap(function(l, r) { return l * r; }),
+            divide: bin_wrap(function(l, r) { return l / r; }),
+            plus: bin_wrap(function(l, r) { return l + r; }),
+            minus: bin_wrap(function(l, r) { return l - r; }),
+            less: bin_wrap(function(l, r) { return l < r; }),
+            greater: bin_wrap(function(l, r) { return l > r; }),
+        },
+        un: {
+            plus: function(o) { return function(c) { return +o.fn(c); }; },
+            minus: function(o) { return function(c) { return -o.fn(c); }; },
+        }
+    };
+
+    this.pull_tree = function(tokens, start, level) {
+        start = start? start : 0,
+        level = level? level : 0;
+        var index = start,
+            end = tokens.length,
+            op_index = 0,
+            op,
+            token,
+            open,
+            close;
+
+        for (op_index = 0; op_index < op_funcs.order.length; op_index++) {
+            op = op_funcs.order[op_index];
+            for (index = start; index < end; index++) {
+                token = tokens[index];
+                if (op[0].test(token.name) && token.type === op[1]) {
+                    if (token.type === 'bracket') {
+                        if (/^o_/.test(token.name)) {  // open
+                            this.pull_tree(tokens, index + 1, level + 1);
+                            end = tokens.length;  // update on return
+                        } else if (/^c_/.test(token.name)) {  // close
+                            end = index;
+                        }
+                    } else if (token.type === 'binary_operator') {
+                        lhs = tokens.splice(index - 1, 1)[0];
+                        index--;  // we lost a token
+                        end--;   // once for left
+                        rhs = tokens.splice(index + 1, 1)[0];
+                        end--;  // aaaaand once for right
+                        token.fn = op_funcs.bin[token.name](lhs, rhs);
+                    } else if (token.type === 'unary_operator') {
+                        rhs = tokens.splice(index + 1, 1)[0];
+                        end--; // we lost a token
+                        token.fn = op_funcs.un[token.name](rhs);
+                    }
+                }
+            }
+        }
+        if (level > 0) {
+            // collapse the parens
+            open = tokens[start - 1];
+            token = tokens.splice(start--, 1)[0];
+            close = tokens.splice(start + 1, 1)[0];
+            if (open === undefined ||
+                token === undefined ||
+                close === undefined) {
+                throw "Parse error. Check the brakets?";
+            }
+            if (! /^c_/.test(close.name)) {
+                throw "Syntax Error at " + end + " -- expected close bracket.";
+            }
+            if (open.name === "o_paren" && close.name === "c_paren") {
+                open.fn = (function(token) {
+                    return function(c) { return token.fn(c); };
+                })(token);
+            } else if (open.name === "o_square" && close.name === "c_square") {
+                open.fn = (function(token) {
+                    return function(c) { return Math.abs(token.fn(c)); };
+                })(token);
+            } else {
+                throw "Syntax error at " + end + " -- mismatched brackets.";
+            }
+            return open;
+        } else {
+            if (tokens.length !== 1) {
+                throw "Parse error -- check operators and brackets.";
+            }
+            return tokens;
+        }
+    };
+
 
     this.ExpressionInput = (function(EXC) {
         return function(con, exp) {
@@ -186,7 +272,13 @@ var ExpressionCompiler = (function() {
         };
     })(this);
 
-    return this;
-})();
 
-var EXC = ExpressionCompiler;
+    this.compile = function(expression) {
+        var dirty_tokens = this.lex(expression);
+        var clean_tokens = this.value_clean_disambiguation(dirty_tokens);
+        var compiled = this.pull_tree(clean_tokens);
+        return compiled[0].fn;
+    };
+});
+
+var EXC = new ExpressionCompiler();

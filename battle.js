@@ -25,7 +25,7 @@ var controls = body.selectAll("div.control")
 controls.append('div')
     .attr('class', 'rdiv')
     .text('r< ').append('div')
-        .each(function() { EXC.ExpressionInput(this, "r"); });
+        .each(function() { EXC.ExpressionInput(this, "0.1"); });
 
 controls.append('div')
     .attr('class', 'rtdiv')
@@ -198,7 +198,7 @@ var game = {
             accel: [0, 0],
             radius: 0.03,
             mass: 6,  // Kg
-            strategy: strategy_wrapper(["0.3 * r", "0", "0", "0"])
+            strategy: strategy_wrapper(["0.1", "0", "0", "0"])
         },
         {
             pos: [0, -0.4],
@@ -206,7 +206,7 @@ var game = {
             accel: [0, 0],
             radius: 0.03,
             mass: 6,  // Kg
-            strategy: strategy_wrapper(["0.3 * r", "0", "0", "0"])
+            strategy: strategy_wrapper(["0.1", "0", "0", "0"])
         }
     ]
 };
@@ -247,7 +247,7 @@ game.toggle = function() {
         window.the_game_is_running = window.setInterval(
             game.update, frame_step * 1000);
     }
-}; game.toggle();
+};
 
 game.reset = function() {
     game.players[0].pos = [0, 0.4];
@@ -255,7 +255,7 @@ game.reset = function() {
     game.players[1].pos = [0, -0.4];
     game.players[1].vel = [-0.03, 0];
     game.update();
-};
+}; game.reset();
 
 d3.select(document.body).selectAll("button.state-button")
         .data([
