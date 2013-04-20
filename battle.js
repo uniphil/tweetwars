@@ -25,22 +25,38 @@ var controls = body.selectAll("div.control")
 controls.append('div')
     .attr('class', 'rdiv')
     .text('r< ').append('div')
-        .each(function() { EXC.ExpressionInput(this, "0.1"); });
+        .each(function(d, i) {
+            var key = 'p' + i + 'r< ';
+            var init = localStorage[key] || "0.1";
+            EXC.ExpressionInput(this, init);
+        });
 
 controls.append('div')
     .attr('class', 'rtdiv')
     .text('r^ ').append('div')
-        .each(function() { new EXC.ExpressionInput(this, "0"); });
+        .each(function(d, i) {
+            var key = 'p' + i + 'r^ ';
+            var init = localStorage[key] || "0";
+            EXC.ExpressionInput(this, init);
+        });
 
 controls.append('div')
     .attr('class', 'odiv')
     .text('o< ').append('div')
-        .each(function() { new EXC.ExpressionInput(this, "0"); });
+        .each(function(d, i) {
+            var key = 'p' + i + 'o< ';
+            var init = localStorage[key] || "0";
+            EXC.ExpressionInput(this, init);
+        });
 
 controls.append('div')
     .attr('class', 'otdiv')
     .text('o^ ').append('div')
-        .each(function() { new EXC.ExpressionInput(this, "0"); });
+        .each(function(d, i) {
+            var key = 'p' + i + 'o^ ';
+            var init = localStorage[key] || "0";
+            EXC.ExpressionInput(this, init);
+        });
 
 var area = body.append('svg')
     .attr('width', width)
@@ -213,7 +229,12 @@ var game = {
             forces: [0, 0, 0, 0],
             radius: 0.03,
             mass: 6,  // Kg
-            strategy: strategy_wrapper(["0.1", "0", "0", "0"])
+            strategy: strategy_wrapper([
+                localStorage['p0r< '] || "0.1",
+                localStorage['p0r^ '] || "0",
+                localStorage['p0o< '] || "0",
+                localStorage['p0o^ '] || "0",
+            ])
         },
         {
             pos: [0, -0.4],
@@ -222,19 +243,28 @@ var game = {
             forces: [0, 0, 0, 0],
             radius: 0.03,
             mass: 6,  // Kg
-            strategy: strategy_wrapper(["0.1", "0", "0", "0"])
+            strategy: strategy_wrapper([
+                localStorage['p1r< '] || "0.1",
+                localStorage['p1r^ '] || "0",
+                localStorage['p1o< '] || "0",
+                localStorage['p1o^ '] || "0",
+            ])
         }
     ]
 };
 
 controls.data(game.players)
-    .on('input', function(d) {
-        d.strategy = strategy_wrapper([
-            d3.select(this).select('.rdiv .expression-input')[0][0].textContent,
-            d3.select(this).select('.rtdiv .expression-input')[0][0].textContent,
-            d3.select(this).select('.odiv .expression-input')[0][0].textContent,
-            d3.select(this).select('.otdiv .expression-input')[0][0].textContent
-        ]);
+    .on('input', function(d, i) {
+        var me = d3.select(this);
+        var ri = me.select('.rdiv .expression-input')[0][0].textContent,
+            rt = me.select('.rtdiv .expression-input')[0][0].textContent,
+            oi = me.select('.odiv .expression-input')[0][0].textContent,
+            ot = me.select('.otdiv .expression-input')[0][0].textContent;
+        d.strategy = strategy_wrapper([ri, rt, oi, ot]);
+        localStorage['p' + i + 'r< '] = ri;
+        localStorage['p' + i + 'r^ '] = rt;
+        localStorage['p' + i + 'o< '] = oi;
+        localStorage['p' + i + 'o^ '] = ot;
     });
 
 game.update = function() {
