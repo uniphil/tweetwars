@@ -14,10 +14,16 @@
 #TweetWars <button id="shstuff" onClick="javascript:document.getElementById('stuff').className='show'">???</button>
 <div id="stuff">
 
-<em>Program your strategy in a tweet. and stuff.</em>
+<em>Knock your opponent off the field.</em>
 
-There are no rules yet. I'm looking for ideas.
+... because that was easy to write. Looking for more game rule ideas!
 
+Read below for a summary of how to write out a strategy to control the players.
+Right now you have to break out the expression onto four lines for each player
+(the input boxes above), but the plan is to have them copy-pasteable for
+tweeting/sharing purposes.
+
+This game is under active development. I love feedback! I'm <a href="https://twitter.com/unicyclephil">@unicyclephil</a>.
 
 
 ## Physics
@@ -32,31 +38,40 @@ Collisions: fully elastic
 ## Forces you control:
 <strong>r&lt;</strong>  <em>push toward centre.</em>
 <strong>r^</strong>  <em>push tangent to centre.</em>
-<strong>o&lt;</strong>  <em>push toward opponent.</em>
-<strong>o^</strong>  <em>push counter-clockwise around opponent. Likely to change.</em>
+<strong>o&lt;</strong>  <em>push directly toward opponent.</em>
+<strong>o^</strong>  <em>push counter-clockwise around opponent. Likely to
+change.</em>
 
 
 ## Variables available to you:
 <strong>r</strong>  <em>your distance from the centre (m)</em>
 <strong>r'</strong> <em>your speed toward the centre (m/s)</em>
 <strong>r|</strong> <em>your speed tangential to the center (m/s)</em>
+<strong>o</strong>  <em>distance to your opponent</em>
+<strong>o'</strong> <em>speed toward opponent (relative to them)</em>
+<strong>o|</strong> <em>speed tangential to opponent (relative to them)</em>
 
 
 ## Math operators available to you (in order of precedence):
-<strong>^</strong>   raise to power
-<strong>* /</strong>  multiply, divide
-<strong>+ -</strong>  add, subtract
-<strong>&lt; &gt;</strong>  less-than, greater-than (evaluate to 1.0 or 0.0 for true/false)
+<strong>( ) [ ]</strong> control order of operations. square brackets return the absolute value.
+<strong>^</strong>     raise to power
+<strong>+  -</strong>  unary plus and minus. plus does... effectively nothing. minus negates the
+value following it.
+<strong>*  /</strong>  multiply, divide
+<strong>+  -</strong>  add, subtract
+<strong>&lt;  &gt;</strong>  less-than, greater-than (evaluate to 1.0 or 0.0 for true/false)
 
 
 ## Math Bugs:
-<strike><strong>float literals</strong>  ".2" evaluates to 2. The lexer is eating leading decimals. Workaround: zero prefix &mdash; "0.2".</strike>
+<strike><strong>float literals</strong>  ".2" evaluates to 2. The lexer is
+eating leading decimals. Workaround: zero prefix &mdash; "0.2".</strike>
 
-## Missing Math (coming soon):
-<strong>Brackets</strong>  Parentheses are currently a syntax error. You cannot control order of operations (yet!).
-<strong>Unary minus</strong>  "-5" is currently a syntax error. Use 0-5.
-<strong>Convenient Constants</strong>  <em>e</em>, <em>pi</em>, etc coming soon.
-<strong>Absolute value</strong>  Not sure how I want this too look yet.
+## Missing Math:
+<strong>Convenient Constants</strong>  <em>e</em>, <em>pi</em>, etc.
+<strike><strong>Brackets</strong>  Parentheses are currently a syntax error. You cannot
+control order of operations (yet!).</strike>
+<strike><strong>Unary minus</strong>  "-5" is currently a syntax error. Use 0-5.</strike>
+<strike><strong>Absolute value</strong>  Not sure how I want this too look yet.</strike>
 
 </div>
 </pre>

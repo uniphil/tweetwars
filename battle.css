@@ -5,6 +5,11 @@ body {
     font-family: monospace;
 }
 
+a {
+    color: #fff;
+    font-weight: bold;
+}
+
 .nojs {
     text-align: center;
 }
