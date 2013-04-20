@@ -105,7 +105,7 @@ var strategy_wrapper = function(strategy) {
         p_force[1] = Math.min(p_force[1], 1);
         p_force[2] = Math.min(p_force[2], 1);
         p_force[3] = Math.min(p_force[3], 1);
-        
+
         var pos_unit = vec.scale(pos, 1.0 / vec.len(pos));
         var tan_unit = [-pos_unit[1], pos_unit[0]];
         var op_unit = (function(v) {
@@ -186,11 +186,18 @@ var collisions = function(players) {
     }
 };
 
+var winner = false
+
 var boundaries = function(players) {
-    for (var n in players) {
-        var p = players[n];
-        if (r(vec.len(p.pos)) > field_r) {
-            // players.splice(n, 1);
+    if (! winner) {
+        for (var n in players) {
+            var p = players[n];
+            if (r(vec.len(p.pos)) > field_r) {
+                d3.select(document.body)
+                    .attr('class', 'p' + n + '-lost');
+                    winner = true;
+                // players.splice(n, 1);
+            }
         }
     }
 };
@@ -259,6 +266,9 @@ game.toggle = function() {
 };
 
 game.reset = function() {
+    winner = false;
+    d3.select(document.body)
+        .attr('class', '');
     game.players[0].pos = [0, 0.4];
     game.players[0].vel = [0.03, 0];
     game.players[1].pos = [0, -0.4];

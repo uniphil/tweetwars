@@ -69,6 +69,12 @@ svg {
     stroke-width: 0;
     fill: hsla(180, 15%, 10%, 1);
 }
+.p0-lost .field-ring {
+    fill: hsla(240, 100%, 80%, 0.667);
+}
+.p1-lost .field-ring {
+    fill: hsla(160, 100%, 80%, 0.667);
+}
 
 .player {
     stroke: hsla(180, 50%, 10%, 0.5);
