@@ -74,6 +74,9 @@ var vec = {
     }
 };
 
+// .5 * (o>.3)
+// -o| * (o<.3) * 30
+
 var strategy_wrapper = function(strategy) {
     var compiled_strategy = [
         EXC.compile(strategy[0]),
@@ -82,12 +85,15 @@ var strategy_wrapper = function(strategy) {
         EXC.compile(strategy[3])
     ];
     return function(pos, vel, mass, op) {
+        var rel_pos = vec.sub(op.pos, pos),
+            rel_vel = vec.sub(vel, op.vel);
         var context = {
             "r": vec.len(pos),  // dist from centre
             "r'": -vec.dot(vel, pos) / vec.len(pos),  // speed toward centre
             "r|": -vec.cross(vel, pos) / vec.len(pos),  // speed tangent to centre
-            "o": vec.len(vec.sub(op.pos, pos)),
-            "o'": vec.len(vec.sub(op.vel, vel))
+            "o": vec.len(rel_pos),
+            "o'": vec.dot(rel_vel, rel_pos) / vec.len(pos),
+            "o|": vec.cross(rel_vel, rel_pos) / vec.len(pos)
         };
         var p_force = [
             compiled_strategy[0](context),
@@ -99,6 +105,7 @@ var strategy_wrapper = function(strategy) {
         p_force[1] = Math.min(p_force[1], 1);
         p_force[2] = Math.min(p_force[2], 1);
         p_force[3] = Math.min(p_force[3], 1);
+        
         var pos_unit = vec.scale(pos, 1.0 / vec.len(pos));
         var tan_unit = [-pos_unit[1], pos_unit[0]];
         var op_unit = (function(v) {
@@ -196,6 +203,7 @@ var game = {
             pos: [0, 0.4],
             vel: [0.03, 0],
             accel: [0, 0],
+            forces: [0, 0, 0, 0],
             radius: 0.03,
             mass: 6,  // Kg
             strategy: strategy_wrapper(["0.1", "0", "0", "0"])
@@ -204,6 +212,7 @@ var game = {
             pos: [0, -0.4],
             vel: [-0.03, 0],
             accel: [0, 0],
+            forces: [0, 0, 0, 0],
             radius: 0.03,
             mass: 6,  // Kg
             strategy: strategy_wrapper(["0.1", "0", "0", "0"])
